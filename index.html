@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Prolific Tracker</title>
+  <style>
+    :root {
+      --bg-color: #f4f6f9;
+      --card-bg: #ffffff;
+      --primary: #0070f3;
+      --primary-hover: #0051a8;
+      --text-main: #333333;
+      --text-muted: #666666;
+      --border-color: #e2e8f0;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 25px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid var(--border-color);
+    }
+
+    h1 {
+      font-size: 1.8rem;
+      color: #1a1a1a;
+    }
+
+    .action-btns button {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin-left: 8px;
+      transition: background 0.2s;
+    }
+
+    .action-btns button:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Dashboard Cards */
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 25px;
+    }
+
+    .card {
+      background: var(--card-bg);
+      padding: 18px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.02);
+    }
+
+    .card h3 {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+
+    .card .value {
+      font-size: 1.6rem;
+      font-weight: 700;
+    }
+
+    /* Input Form */
+    .form-container {
+      background: var(--card-bg);
+      padding: 20px;
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      margin-bottom: 25px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+    }
+
+    .form-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .form-group label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 5px;
+      color: var(--text-muted);
+    }
+
+    .form-group input, .form-group select {
+      padding: 8px 12px;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      font-size: 0.95rem;
+    }
+
+    .btn-submit {
+      grid-column: 1 / -1;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 10px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    .btn-submit:hover {
+      background: var(--primary-hover);
+    }
+
+    /* Table */
+    .table-container {
+      background: var(--card-bg);
+      border-radius: 10px;
+      border: 1px solid var(--border-color);
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    th {
+      background-color: #f8fafc;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+    }
+
+    tr:last-child td {
+      border-bottom: none;
+    }
+
+    .badge {
+      padding: 4px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      display: inline-block;
+    }
+
+    .badge-approved { background: #d1fae5; color: #065f46; }
+    .badge-pending { background: #fef3c7; color: #92400e; }
+    .badge-rejected { background: #fee2e2; color: #991b1b; }
+    .badge-returned { background: #e2e8f0; color: #475569; }
+
+    .btn-delete {
+      background: none;
+      border: none;
+      color: var(--danger);
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .hidden { display: none; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>Prolific Study Tracker</h1>
+    <div class="action-btns">
+      <button onclick="exportCSV()">Export CSV</button>
+      <button onclick="document.getElementById('csvInput').click()">Import CSV</button>
+      <input type="file" id="csvInput" class="hidden" accept=".csv" onchange="importCSV(event)">
+    </div>
+  </header>
+
+  <!-- Key Metrics Dashboard -->
+  <section class="dashboard">
+    <div class="card">
+      <h3>Gesamteinnahmen</h3>
+      <div class="value" id="stat-earnings">£0.00</div>
+    </div>
+    <div class="card">
+      <h3>Ausstehend (Pending)</h3>
+      <div class="value" id="stat-pending">£0.00</div>
+    </div>
+    <div class="card">
+      <h3>Durchschnittl. Stundenlohn</h3>
+      <div class="value" id="stat-hourly">£0.00/h</div>
+    </div>
+    <div class="card">
+      <h3>Studien Gesamt</h3>
+      <div class="value" id="stat-count">0</div>
+    </div>
+    <div class="card">
+      <h3>Genehmigungsquote</h3>
+      <div class="value" id="stat-approval">100%</div>
+    </div>
+  </section>
+
+  <!-- Add Study Form -->
+  <section class="form-container">
+    <form id="studyForm" onsubmit="addStudy(event)">
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="title">Studienname</label>
+          <input type="text" id="title" required placeholder="z. B. Decision Making Study">
+        </div>
+        <div class="form-group">
+          <label for="reward">Vergütung (£)</label>
+          <input type="number" id="reward" step="0.01" min="0" required placeholder="2.50">
+        </div>
+        <div class="form-group">
+          <label for="time">Dauer (Minuten)</label>
+          <input type="number" id="time" min="1" required placeholder="15">
+        </div>
+        <div class="form-group">
+          <label for="status">Status</label>
+          <select id="status">
+            <option value="Approved">Genehmigt (Approved)</option>
+            <option value="Pending" selected>Ausstehend (Pending)</option>
+            <option value="Returned">Zurückgegeben (Returned)</option>
+            <option value="Rejected">Abgelehnt (Rejected)</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="date">Datum</label>
+          <input type="date" id="date" required>
+        </div>
+      </div>
+      <button type="submit" class="btn-submit">Studie Hinzufügen</button>
+    </form>
+  </section>
+
+  <!-- Data Table -->
+  <section class="table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>Datum</th>
+          <th>Studienname</th>
+          <th>Dauer</th>
+          <th>Vergütung</th>
+          <th>Stundenlohn</th>
+          <th>Status</th>
+          <th>Aktion</th>
+        </tr>
+      </thead>
+      <tbody id="studyTableBody">
+        <!-- Rows dynamically inserted here -->
+      </tbody>
+    </table>
+  </section>
+
+  <script>
+    let studies = JSON.parse(localStorage.getItem('prolific_studies')) || [];
+
+    // Set default date input to today
+    document.getElementById('date').valueAsDate = new Date();
+
+    function saveData() {
+      localStorage.setItem('prolific_studies', JSON.stringify(studies));
+      render();
+    }
+
+    function addStudy(e) {
+      e.preventDefault();
+      const newStudy = {
+        id: Date.now(),
+        title: document.getElementById('title').value,
+        reward: parseFloat(document.getElementById('reward').value),
+        time: parseInt(document.getElementById('time').value),
+        status: document.getElementById('status').value,
+        date: document.getElementById('date').value
+      };
+
+      studies.unshift(newStudy);
+      saveData();
+      document.getElementById('studyForm').reset();
+      document.getElementById('date').valueAsDate = new Date();
+    }
+
+    function deleteStudy(id) {
+      studies = studies.filter(s => s.id !== id);
+      saveData();
+    }
+
+    function render() {
+      const tbody = document.getElementById('studyTableBody');
+      tbody.innerHTML = '';
+
+      let totalEarned = 0;
+      let totalPending = 0;
+      let totalTimeMinutes = 0;
+      let approvedCount = 0;
+      let rejectedCount = 0;
+
+      studies.forEach(study => {
+        const hourlyRate = study.time > 0 ? (study.reward / (study.time / 60)) : 0;
+
+        if (study.status === 'Approved') {
+          totalEarned += study.reward;
+          totalTimeMinutes += study.time;
+          approvedCount++;
+        } else if (study.status === 'Pending') {
+          totalPending += study.reward;
+        } else if (study.status === 'Rejected') {
+          rejectedCount++;
+        }
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${study.date}</td>
+          <td><strong>${escapeHtml(study.title)}</strong></td>
+          <td>${study.time} Min</td>
+          <td>£${study.reward.toFixed(2)}</td>
+          <td>£${hourlyRate.toFixed(2)}/h</td>
+          <td><span class="badge badge-${study.status.toLowerCase()}">${study.status}</span></td>
+          <td><button class="btn-delete" onclick="deleteStudy(${study.id})">&times;</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      // Update Statistics
+      document.getElementById('stat-earnings').textContent = `£${totalEarned.toFixed(2)}`;
+      document.getElementById('stat-pending').textContent = `£${totalPending.toFixed(2)}`;
+      
+      const avgHourly = totalTimeMinutes > 0 ? (totalEarned / (totalTimeMinutes / 60)) : 0;
+      document.getElementById('stat-hourly').textContent = `£${avgHourly.toFixed(2)}/h`;
+      
+      document.getElementById('stat-count').textContent = studies.length;
+
+      const totalFinished = approvedCount + rejectedCount;
+      const approvalRate = totalFinished > 0 ? ((approvedCount / totalFinished) * 100).toFixed(1) : 100;
+      document.getElementById('stat-approval').textContent = `${approvalRate}%`;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function exportCSV() {
+      if (studies.length === 0) return alert('Keine Daten zum Exportieren vorhanden.');
+      
+      let csvContent = 'data:text/csv;charset=utf-8,Datum,Titel,Dauer (Min),Verguetung,Status\n';
+      studies.forEach(s => {
+        csvContent += `"${s.date}","${s.title.replace(/"/g, '""')}",${s.time},${s.reward},"${s.status}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement('a');
+      link.setAttribute('href', encodedUri);
+      link.setAttribute('download', `prolific_tracker_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    function importCSV(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        const lines = event.target.result.split('\n').slice(1);
+        lines.forEach(line => {
+          if (!line.trim()) return;
+          const cols = line.split(',').map(col => col.replace(/^"|"$/g, '').trim());
+          if (cols.length >= 5) {
+            studies.push({
+              id: Date.now() + Math.random(),
+              date: cols[0],
+              title: cols[1],
+              time: parseInt(cols[2]) || 0,
+              reward: parseFloat(cols[3]) || 0,
+              status: cols[4] || 'Pending'
+            });
+          }
+        });
+        saveData();
+      };
+      reader.readAsText(file);
+    }
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
